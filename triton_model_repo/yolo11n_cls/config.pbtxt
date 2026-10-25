@@ -1,0 +1,18 @@
+# SGIE: YOLO11n-cls classifier on vehicle crops, TensorRT FP16 plan
+name: "yolo11n_cls"
+platform: "tensorrt_plan"
+max_batch_size: 16
+default_model_filename: "model.plan"
+input [
+  { name: "input", data_type: TYPE_FP32, dims: [ 3, 224, 224 ] }
+]
+output [
+  # ImageNet-1k softmax probabilities
+  { name: "output", data_type: TYPE_FP32, dims: [ 1000 ] }
+]
+instance_group [ { count: 1, kind: KIND_GPU, gpus: [ 0 ] } ]
+dynamic_batching {
+  preferred_batch_size: [ 8, 16 ]
+  max_queue_delay_microseconds: 2000
+}
+version_policy: { latest: { num_versions: 1 } }

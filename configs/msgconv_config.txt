@@ -1,0 +1,50 @@
+# nvmsgconv metadata for deepstream-test5-app message broker: one [sensorN] per source (id shows as "sensorId" in JSON).
+[sensor0]
+enable=1
+type=Camera
+id=cam0
+location=0;0;0
+description=Camera 0
+coordinate=0;0;0
+
+[sensor1]
+enable=1
+type=Camera
+id=cam1
+location=0;0;0
+description=Camera 1
+coordinate=0;0;0
+
+[sensor2]
+enable=1
+type=Camera
+id=cam2
+location=0;0;0
+description=Camera 2
+coordinate=0;0;0
+
+[sensor3]
+enable=1
+type=Camera
+id=cam3
+location=0;0;0
+description=Camera 3
+coordinate=0;0;0
+
+[place0]
+enable=1
+id=0
+type=road
+name=road0
+location=0;0;0
+coordinate=0;0;0
+place-sub-field1=area0
+place-sub-field2=lane0
+place-sub-field3=p0
+
+[analytics0]
+enable=1
+id=yolo11-triton
+description=YOLO11 detector + YOLO11-cls classifier on Triton
+source=deepstream-test5
+version=1.0

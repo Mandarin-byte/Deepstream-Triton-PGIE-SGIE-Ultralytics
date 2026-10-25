@@ -1,0 +1,107 @@
+# Same pipeline as test5_yolo11_triton.txt, but shown in an on-screen window.
+#   4 x file -> nvstreammux -> PGIE(yolo11n, Triton) -> NvDCF tracker -> SGIE(yolo11n_cls, Triton)
+#   -> tiler 2x2 -> OSD -> RTSP out  rtsp://<host>:8554/ds-test
+[application]
+enable-perf-measurement=1
+perf-measurement-interval-sec=5
+
+[tiled-display]
+enable=1
+rows=2
+columns=2
+width=1280
+height=720
+gpu-id=0
+
+[source0]
+enable=1
+# 3 = multi-uri, num-sources copies of the same uri (use type=4 + rtsp:// for a camera)
+type=3
+uri=file:///opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h264.mp4
+num-sources=4
+gpu-id=0
+cudadec-memtype=0
+
+[streammux]
+gpu-id=0
+live-source=0
+batch-size=4
+batched-push-timeout=40000
+width=1920
+height=1080
+enable-padding=0
+
+[primary-gie]
+enable=1
+# 1 = nvinferserver (Triton)
+plugin-type=1
+gpu-id=0
+batch-size=4
+gie-unique-id=1
+interval=0
+config-file=config_pgie_yolo11_triton.txt
+
+[tracker]
+enable=1
+tracker-width=960
+tracker-height=544
+ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+ll-config-file=/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_tracker_NvDCF_perf.yml
+gpu-id=0
+display-tracking-id=1
+
+[secondary-gie0]
+enable=1
+plugin-type=1
+gpu-id=0
+batch-size=16
+gie-unique-id=2
+operate-on-gie-id=1
+operate-on-class-ids=2;3;5;7;
+config-file=config_sgie_yolo11_cls_triton.txt
+
+[osd]
+enable=1
+gpu-id=0
+border-width=2
+text-size=12
+text-color=1;1;1;1;
+text-bg-color=0.3;0.3;0.3;1
+font=Serif
+
+# RTSP output (disabled in the display config)
+[sink0]
+enable=0
+type=4
+codec=1
+enc-type=0
+sync=1
+bitrate=4000000
+# keyframe every 30 frames so RTSP clients can start decoding quickly
+iframeinterval=30
+rtsp-port=8554
+udp-port=5400
+gpu-id=0
+
+# MP4 file output (off by default)
+[sink1]
+enable=0
+type=3
+container=1
+codec=1
+enc-type=0
+sync=0
+bitrate=4000000
+output-file=/app/output/out.mp4
+gpu-id=0
+
+[tests]
+file-loop=1
+
+# On-screen window (needs DISPLAY + /tmp/.X11-unix mounted; see scripts/run_deepstream.sh)
+[sink2]
+enable=1
+# 2 = EglSink
+type=2
+sync=1
+gpu-id=0

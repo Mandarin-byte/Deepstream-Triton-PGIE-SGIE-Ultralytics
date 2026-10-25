@@ -1,0 +1,53 @@
+# SGIE: YOLO11n-cls (ImageNet) on vehicle crops from the PGIE, served by Triton over gRPC.
+infer_config {
+  unique_id: 2
+  gpu_ids: [0]
+  max_batch_size: 16
+
+  backend {
+    triton {
+      model_name: "yolo11n_cls"
+      version: -1
+      grpc {
+        url: "127.0.0.1:8001"
+        enable_cuda_buffer_sharing: true
+      }
+    }
+  }
+
+  preprocess {
+    network_format: IMAGE_FORMAT_RGB
+    tensor_order: TENSOR_ORDER_LINEAR
+    maintain_aspect_ratio: 0
+    frame_scaling_hw: FRAME_SCALING_HW_DEFAULT
+    frame_scaling_filter: 1
+    normalize {
+      scale_factor: 0.0039215697906911373   # 1/255, same as Ultralytics classify
+    }
+  }
+
+  postprocess {
+    labelfile_path: "/app/configs/labels_cls.txt"
+    classification {
+      threshold: 0.2   # model output is already softmax
+    }
+  }
+
+  extra {
+    copy_input_to_host_buffers: false
+  }
+}
+
+input_control {
+  process_mode: PROCESS_MODE_CLIP_OBJECTS
+  operate_on_gie_id: 1
+  operate_on_class_ids: [2, 3, 5, 7]   # COCO car, motorcycle, bus, truck
+  secondary_reinfer_interval: 30       # re-classify a tracked object every 30 frames
+  async_mode: true                     # needs the tracker
+  object_control {
+    bbox_filter {
+      min_width: 64
+      min_height: 64
+    }
+  }
+}

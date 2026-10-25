@@ -1,0 +1,117 @@
+# deepstream-test5-app pipeline: RTSP out + detections/classifications as JSON to Redis (message broker).
+# deepstream-test5-app pipeline:
+#   4 x file -> nvstreammux -> PGIE(yolo11n, Triton) -> NvDCF tracker -> SGIE(yolo11n_cls, Triton)
+#   -> tiler 2x2 -> OSD -> RTSP out  rtsp://<host>:8554/ds-test
+[application]
+enable-perf-measurement=1
+perf-measurement-interval-sec=5
+
+[tiled-display]
+enable=1
+rows=2
+columns=2
+width=1280
+height=720
+gpu-id=0
+
+[source0]
+enable=1
+# 3 = multi-uri, num-sources copies of the same uri (use type=4 + rtsp:// for a camera)
+type=3
+uri=file:///opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h264.mp4
+num-sources=4
+gpu-id=0
+cudadec-memtype=0
+
+[streammux]
+gpu-id=0
+live-source=0
+batch-size=4
+batched-push-timeout=40000
+width=1920
+height=1080
+enable-padding=0
+
+[primary-gie]
+enable=1
+# 1 = nvinferserver (Triton)
+plugin-type=1
+gpu-id=0
+batch-size=4
+gie-unique-id=1
+interval=0
+config-file=config_pgie_yolo11_triton.txt
+
+[tracker]
+enable=1
+tracker-width=960
+tracker-height=544
+ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+ll-config-file=/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_tracker_NvDCF_perf.yml
+gpu-id=0
+display-tracking-id=1
+
+[secondary-gie0]
+enable=1
+plugin-type=1
+gpu-id=0
+batch-size=16
+gie-unique-id=2
+operate-on-gie-id=1
+operate-on-class-ids=2;3;5;7;
+config-file=config_sgie_yolo11_cls_triton.txt
+
+[osd]
+enable=1
+gpu-id=0
+border-width=2
+text-size=12
+text-color=1;1;1;1;
+text-bg-color=0.3;0.3;0.3;1
+font=Serif
+
+# RTSP output (like levipereira's app): rtsp://localhost:8554/ds-test
+[sink0]
+enable=1
+type=4
+codec=1
+enc-type=0
+sync=1
+bitrate=4000000
+# keyframe every 30 frames so RTSP clients can start decoding quickly
+iframeinterval=30
+rtsp-port=8554
+udp-port=5400
+gpu-id=0
+
+# MP4 file output (off by default)
+[sink1]
+enable=0
+type=3
+container=1
+codec=1
+enc-type=0
+sync=0
+bitrate=4000000
+output-file=/app/output/out.mp4
+gpu-id=0
+
+[tests]
+file-loop=1
+
+# Message broker: every 30 frames, one JSON message per camera with all objects
+# ("trackId|x1|y1|x2|y2|class|#|classifier_label|confidence") pushed to a Redis stream.
+# Start Redis with scripts/start_redis.sh. For Kafka use libnvds_kafka_proto.so and conn-str=<host>;<port>.
+[sink3]
+enable=1
+# 6 = MsgConvBroker
+type=6
+msg-conv-config=msgconv_config.txt
+# 1 = minimal DeepStream schema (keeps classifier labels; 0 = full schema, one message per object)
+msg-conv-payload-type=1
+# new nvmsgconv API: required for msg-conv-frame-interval and classifier labels
+msg-conv-msg2p-new-api=1
+msg-conv-frame-interval=30
+msg-broker-proto-lib=/opt/nvidia/deepstream/deepstream/lib/libnvds_redis_proto.so
+msg-broker-conn-str=localhost;6379
+topic=ds-yolo11

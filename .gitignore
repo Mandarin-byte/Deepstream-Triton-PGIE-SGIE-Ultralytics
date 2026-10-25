@@ -1,0 +1,18 @@
+# Model weights and exported/built models (regenerate with convert/ and scripts/build_engines.sh)
+*.pt
+*.onnx
+*.onnx.data
+*.plan
+*.engine
+
+# Build artifacts
+*.o
+*.so
+__pycache__/
+
+# Generated files
+convert/labels.txt
+convert/labels_cls.txt
+output/
+README.html
+docs/*.html
