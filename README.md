@@ -588,3 +588,7 @@ curl -s -X POST localhost:8000/v2/repository/index   # models loaded?
 curl -s localhost:8002/metrics | grep nv_inference_count   # requests per model
 docker logs -f triton-yolo                           # Triton log
 ```
+
+## License
+`nvdsinfer_custom_impl_Yolo/` comes from [marcoslucianops/DeepStream-Yolo](https://github.com/marcoslucianops/DeepStream-Yolo)
+and is MIT licensed (see `nvdsinfer_custom_impl_Yolo/LICENSE.md`).
